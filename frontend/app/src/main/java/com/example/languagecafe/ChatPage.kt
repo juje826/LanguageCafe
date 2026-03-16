@@ -31,10 +31,10 @@ fun ChatPage(modifier: Modifier = Modifier, viewModel: ChatViewModel) {
         modifier = modifier
     ) {
         AppHeader()
+        ChatMessages(viewModel.conversation)
         MessageInput(
             onMessageSend = {
                 viewModel.sendMessage(it)
-
             }
         )
     }
@@ -83,4 +83,16 @@ fun MessageInput(onMessageSend : (String) -> Unit) {
         }
     }
 
+}
+
+@Composable
+fun ChatMessages(messages: List<ChatMessage>) {
+    Column {
+        messages.forEach { msg ->
+            Text(
+                text = "${msg.role}: ${msg.text}",
+                modifier = Modifier.padding(4.dp)
+            )
+        }
+    }
 }

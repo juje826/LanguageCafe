@@ -19,10 +19,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val chatViewModel = ViewModelProvider(this)[ChatViewModel::class.java]
+        chatViewModel.checkServer()
         setContent {
             LanguageCafeTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    ChatPage(modifier = Modifier.padding(innerPadding), chatViewModel)
+                if (chatViewModel.serverReady) {
+                    Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                        ChatPage(modifier = Modifier.padding(innerPadding), chatViewModel)
+                    }
+                } else {
+                    LoadingScreen()
                 }
             }
         }

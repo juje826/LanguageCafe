@@ -27,7 +27,7 @@ LANGUAGE RULES:
 - avoid complex grammar
 """
 
-def generate_chat_response(user_message):
+def generate_chat_response(prompt):
     """
     Send message to the LLM and return the response
     """
@@ -35,7 +35,7 @@ def generate_chat_response(user_message):
     response = client.chat.completions.create(
         model="gemma3:27b", # or the other model
         messages=[{"role": "system", "content": SYSTEM_PROMPT},
-                  {"role": "user", "content": user_message}],
+                  {"role": "user", "content": prompt}],
         temperature=0.3
     )
 

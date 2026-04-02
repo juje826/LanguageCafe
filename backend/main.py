@@ -28,15 +28,14 @@ def chat(request: ChatRequest):
     user_message = request.message
     prompt = create_prompt(state, user_message)
 
-    while True:
-        # get llm repsonse
+    # parse JSON and try again if invalid JSON is returned
+    MAX_RETRIES = 2
+    for _ in range(MAX_RETRIES):
         llm_raw = generate_chat_response(prompt)
-
-        # parse JSON and try again if invalid JSON is returned
-        llm_output = parse_llm_json(llm_raw) 
-        if llm_output is not None:
+        llm_output = parse_llm_json(llm_raw)
+        if llm_output:
             break
-    
+
     # store conversation state
     state["chat_history"].append({
         "role": "student",

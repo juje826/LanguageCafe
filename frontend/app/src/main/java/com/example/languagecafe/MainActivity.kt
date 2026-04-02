@@ -28,7 +28,7 @@ class MainActivity : ComponentActivity() {
         chatViewModel.checkServer()
 
         setContent {
-            LanguageCafeTheme {
+            LanguageCafeTheme(darkTheme = false) {
 
                 var selectedScenario by remember { mutableStateOf<String?>(null) }
                 var sessionId by remember { mutableStateOf<String?>(null) }

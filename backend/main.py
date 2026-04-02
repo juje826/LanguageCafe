@@ -12,6 +12,8 @@ class ChatRequest(BaseModel):
     message: str
     session_id: str
     scenario_id: str
+    native_language: str
+    target_language: str
 
 @app.get("/")
 def root():
@@ -23,6 +25,12 @@ def chat(request: ChatRequest):
 
     if state["scenario"] is None:
         state["scenario"] = request.scenario_id
+        
+    if state.get("native_language") is None:
+        state["native_language"] = request.native_language
+
+    if state.get("target_language") is None:
+        state["target_language"] = request.target_language
 
     # Create prompt from user message
     user_message = request.message

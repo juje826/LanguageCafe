@@ -1,5 +1,5 @@
-from coffee_ordering import SCENARIO
-from prompt_builder import build_prompt
+from .coffee_ordering import SCENARIO
+from .prompt_builder import build_prompt
 
 SCENARIOS = {
     "coffee_ordering": SCENARIO

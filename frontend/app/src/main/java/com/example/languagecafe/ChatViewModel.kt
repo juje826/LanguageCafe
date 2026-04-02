@@ -21,6 +21,9 @@ import kotlinx.coroutines.delay
 
 class ChatViewModel : ViewModel() {
 
+    var sessionId: String = ""
+    var scenarioId: String = ""
+
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })
@@ -47,7 +50,13 @@ class ChatViewModel : ViewModel() {
                 Log.i("ChatViewModel", "Sending request to backend: $message")
                 val response: LLMResponse = client.post("https://languagecafe.onrender.com/chat") {
                     contentType(ContentType.Application.Json)
-                    setBody(mapOf("message" to message))
+                    setBody(
+                        mapOf(
+                            "message" to message,
+                            "session_id" to sessionId,
+                            "scenario_id" to scenarioId
+                        )
+                    )
                 }.body()
 
                 // Add response

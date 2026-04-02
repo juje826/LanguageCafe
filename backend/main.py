@@ -22,7 +22,7 @@ def chat(request: ChatRequest):
     state = get_session(request.session_id)
 
     if state["scenario"] is None:
-        state["scenario"] = "coffee_ordering"  # change later to request.scenario_id
+        state["scenario"] = request.scenario_id
 
     # Create prompt from user message
     user_message = request.message
@@ -30,11 +30,26 @@ def chat(request: ChatRequest):
 
     # parse JSON and try again if invalid JSON is returned
     MAX_RETRIES = 2
+    llm_output = None
+    llm_raw = None
+
     for _ in range(MAX_RETRIES):
         llm_raw = generate_chat_response(prompt)
+
+        print("RAW LLM OUTPUT:")
+        print(llm_raw)
+
         llm_output = parse_llm_json(llm_raw)
         if llm_output:
             break
+    
+    if llm_output is None:
+        print("FAILED TO PARSE JSON AFTER RETRIES")
+        return {
+            "response": "Sorry, something went wrong. Please try again.",
+            "detected_goal": None,
+            "debug": llm_raw
+        }
 
     # store conversation state
     state["chat_history"].append({

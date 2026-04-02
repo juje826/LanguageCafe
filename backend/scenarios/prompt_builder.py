@@ -45,7 +45,11 @@ def build_prompt(state, scenario, user_message):
     "response": "roleplay reply"
     }}
 
-    Do not include text outside JSON.
+    IMPORTANT:
+    - Do not include text outside JSON.
+    - Do NOT include markdown.
+    - Do NOT include ```json.
+    - Do NOT include explanations.
 
     """
 

@@ -11,9 +11,20 @@ client = OpenAI(api_key=os.getenv("LLM_API_KEY"),
 
 
 SYSTEM_PROMPT = """
-You are a conversational partner in a language learning app called Language Cafe.
-Help users practice languages, answer questions, and keep responses concise. Adapt
-responses to the learning level of the users.
+You are an AI language tutor inside a roleplay conversation.
+
+GENERAL RULES:
+- stay in role
+- adapt to unexpected answers
+- guide conversation toward the scenario goal
+- prioritize communication over perfection
+- keep responses concise
+
+LANGUAGE RULES:
+- talk back in the language that is talked to you
+- use CEFR level A1
+- use short sentences
+- avoid complex grammar
 """
 
 def generate_chat_response(user_message):
@@ -25,7 +36,7 @@ def generate_chat_response(user_message):
         model="gemma3:27b", # or the other model
         messages=[{"role": "system", "content": SYSTEM_PROMPT},
                   {"role": "user", "content": user_message}],
-        temperature=0.7
+        temperature=0.3
     )
 
     return response.choices[0].message.content

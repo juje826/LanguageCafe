@@ -1,11 +1,17 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from llm_service import generate_chat_response
+from memory.session_store import get_session
+from scenarios.scenario_engine import create_prompt, update_goals
+from utils.json_parser import parse_llm_json
+
 
 app = FastAPI()
 
 class ChatRequest(BaseModel):
     message: str
+    session_id: str
+    scenario_id: str
 
 @app.get("/")
 def root():
@@ -13,9 +19,31 @@ def root():
 
 @app.post("/chat")
 def chat(request: ChatRequest):
+    state = get_session(request.session_id)
+
+    if state["scenario"] is None:
+        state["scenario"] = "coffee_ordering"  # change later to request.scenario_id
+
+    # Create prompt from user message
     user_message = request.message
+    prompt = create_prompt(state, user_message)
 
-    # LLM response
-    response = generate_chat_response(user_message)
+    while True:
+        # get llm repsonse
+        llm_raw = generate_chat_response(prompt)
 
-    return {"response": response}
+        # parse JSON and try again if invalid JSON is returned
+        llm_output = parse_llm_json(llm_raw) 
+        if llm_output is not None:
+            break
+    
+    # store conversation state
+    state["chat_history"].append({
+        "role": "student",
+        "content": request.message
+    })
+
+    # update goals
+    update_goals(state, llm_output)
+
+    return llm_output

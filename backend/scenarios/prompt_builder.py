@@ -47,9 +47,6 @@ def build_prompt(state, scenario, user_message):
 
     IMPORTANT:
     - Do not include text outside JSON.
-    - Do NOT include markdown.
-    - Do NOT include ```json.
-    - Do NOT include explanations.
 
     """
 

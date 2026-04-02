@@ -29,6 +29,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LanguageCafeTheme(darkTheme = false) {
+                var nativeLanguage by remember { mutableStateOf<String?>(null) }
+                var targetLanguage by remember { mutableStateOf<String?>(null) }
 
                 var selectedScenario by remember { mutableStateOf<String?>(null) }
                 var sessionId by remember { mutableStateOf<String?>(null) }
@@ -36,30 +38,74 @@ class MainActivity : ComponentActivity() {
                 if (!chatViewModel.serverReady) {
                     LoadingScreen()
                 } else {
-                    // back button handling
-                    BackHandler(enabled = selectedScenario != null) {
-                        // go back to scenario selection
-                        selectedScenario = null
-                        sessionId = null
-                        chatViewModel.conversation.clear() // optionally clear previous chat
+                    // back navigation logic
+                    BackHandler(
+                        enabled =
+                            selectedScenario != null ||
+                                    nativeLanguage != null
+                    ) {
+
+                        when {
+
+                            // from chat -> go back to scenario selection
+                            selectedScenario != null -> {
+
+                                selectedScenario = null
+                                sessionId = null
+
+                                chatViewModel.conversation.clear()
+                            }
+
+                            // from scenario selection -> go back to language selection
+                            nativeLanguage != null -> {
+
+                                nativeLanguage = null
+                                targetLanguage = null
+                            }
+                        }
                     }
 
-                    if (selectedScenario == null || sessionId == null) {
-                        // Show scenario selection
-                        ScenarioSelectionPage { scenario, session ->
-                            selectedScenario = scenario
-                            sessionId = session
-                            // Update the ViewModel
-                            chatViewModel.scenarioId = scenario
-                            chatViewModel.sessionId = session
+                    when {
+
+                        // language selection screen
+                        nativeLanguage == null || targetLanguage == null -> {
+
+                            LanguageSelectionPage { targetLang ->
+
+                                nativeLanguage = "en"
+                                targetLanguage = targetLang
+
+                                // store in ViewModel so backend can access later
+                                chatViewModel.nativeLanguage = targetLanguage
+                                chatViewModel.targetLanguage = targetLang
+                            }
                         }
-                    } else {
-                        // Show chat page
-                        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                            ChatPage(
-                                modifier = Modifier.padding(innerPadding),
-                                viewModel = chatViewModel
-                            )
+
+                        // scenario selection screen
+                        selectedScenario == null || sessionId == null -> {
+
+                            ScenarioSelectionPage { scenario, session ->
+
+                                selectedScenario = scenario
+                                sessionId = session
+
+                                chatViewModel.scenarioId = scenario
+                                chatViewModel.sessionId = session
+                            }
+                        }
+
+                        // chat screen
+                        else -> {
+
+                            Scaffold(
+                                modifier = Modifier.fillMaxSize()
+                            ) { innerPadding ->
+
+                                ChatPage(
+                                    modifier = Modifier.padding(innerPadding),
+                                    viewModel = chatViewModel
+                                )
+                            }
                         }
                     }
                 }

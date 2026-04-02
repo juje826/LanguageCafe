@@ -21,6 +21,8 @@ import kotlinx.coroutines.delay
 
 class ChatViewModel : ViewModel() {
 
+    var nativeLanguage: String? = null
+    var targetLanguage: String? = null
     var sessionId: String = ""
     var scenarioId: String = ""
 
@@ -54,7 +56,9 @@ class ChatViewModel : ViewModel() {
                         mapOf(
                             "message" to message,
                             "session_id" to sessionId,
-                            "scenario_id" to scenarioId
+                            "scenario_id" to scenarioId,
+                            "native_language" to nativeLanguage,
+                            "target_language" to targetLanguage
                         )
                     )
                 }.body()

@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             LanguageCafeTheme(darkTheme = false) {
+                var showHomeScreen by remember { mutableStateOf(true) }
                 var nativeLanguage by remember { mutableStateOf<String?>(null) }
                 var targetLanguage by remember { mutableStateOf<String?>(null) }
 
@@ -40,9 +41,7 @@ class MainActivity : ComponentActivity() {
                 } else {
                     // back navigation logic
                     BackHandler(
-                        enabled =
-                            selectedScenario != null ||
-                                    nativeLanguage != null
+                        enabled = !showHomeScreen
                     ) {
 
                         when {
@@ -62,10 +61,22 @@ class MainActivity : ComponentActivity() {
                                 nativeLanguage = null
                                 targetLanguage = null
                             }
+
+                            // from language selection -> go back to home screen
+                            else -> {
+                                showHomeScreen = true
+                            }
                         }
                     }
 
                     when {
+
+                        // home screen
+                        showHomeScreen -> {
+                            HomeScreen(chatViewModel) {
+                                showHomeScreen = false
+                            }
+                        }
 
                         // language selection screen
                         nativeLanguage == null || targetLanguage == null -> {

@@ -26,6 +26,10 @@ class ChatViewModel : ViewModel() {
     var sessionId: String = ""
     var scenarioId: String = ""
 
+    var streak by mutableStateOf(0)
+    var dailyGoal by mutableStateOf(5)
+    var dailyProgress by mutableStateOf(0)
+
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
             json(Json { ignoreUnknownKeys = true })

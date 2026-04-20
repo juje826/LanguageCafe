@@ -14,10 +14,12 @@ class ChatRequest(BaseModel):
     scenario_id: str
     native_language: str
     target_language: str
+
 class TranslationRequest(BaseModel):
     text: str
     target_language: str
     source_language: str = "auto" # Optional: Defaults to auto-detect if not provided
+
 @app.get("/")
 def root():
     return {"status": "LanguageCafe backend running"}
@@ -67,6 +69,12 @@ def chat(request: ChatRequest):
         "role": "student",
         "content": request.message
     })
+
+    # update goals
+    update_goals(state, llm_output)
+
+    return llm_output
+
 @app.post("/translate")
 def translate_text(request: TranslationRequest):
     if request.source_language == "auto":
@@ -90,8 +98,3 @@ def translate_text(request: TranslationRequest):
             "status": "error",
             "message": "Failed to translate text. Please try again."
         }
-    # update goals
-    update_goals(state, llm_output)
-
-    return llm_output
-

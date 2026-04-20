@@ -14,7 +14,10 @@ class ChatRequest(BaseModel):
     scenario_id: str
     native_language: str
     target_language: str
-
+class TranslationRequest(BaseModel):
+    text: str
+    target_language: str
+    source_language: str = "auto" # Optional: Defaults to auto-detect if not provided
 @app.get("/")
 def root():
     return {"status": "LanguageCafe backend running"}
@@ -64,8 +67,31 @@ def chat(request: ChatRequest):
         "role": "student",
         "content": request.message
     })
+@app.post("/translate")
+def translate_text(request: TranslationRequest):
+    if request.source_language == "auto":
+        prompt = f"Translate the following text into {request.target_language}. Only return the translated text, nothing else.\n\nText: '{request.text}'"
+    else:
+        prompt = f"Translate the following text from {request.source_language} to {request.target_language}. Only return the translated text, nothing else.\n\nText: '{request.text}'"
 
+    try:
+        translation_result = generate_chat_response(prompt)
+        clean_translation = translation_result.strip().strip("'\"")
+        
+        return {
+            "status": "success",
+            "original_text": request.text,
+            "target_language": request.target_language,
+            "translation": clean_translation
+        }
+    except Exception as e:
+        print(f"TRANSLATION ERROR: {e}")
+        return {
+            "status": "error",
+            "message": "Failed to translate text. Please try again."
+        }
     # update goals
     update_goals(state, llm_output)
 
     return llm_output
+

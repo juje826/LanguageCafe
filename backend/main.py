@@ -1,3 +1,4 @@
+import importlib
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from llm_service import generate_chat_response
@@ -7,7 +8,6 @@ from utils.json_parser import parse_llm_json
 
 app = FastAPI()
 
-# --- 1. Pydantic Models ---
 class ChatRequest(BaseModel):
     message: str
     session_id: str
@@ -20,30 +20,31 @@ class TranslationRequest(BaseModel):
     target_language: str
     source_language: str = "auto"
 
-# --- 2. Scenario Data (Used to load goals) ---
-SCENARIOS = {
-    "coffee_ordering": {
-        "id": "coffee_ordering",
-        "role": "waiter",
-        "description": "Student practices ordering coffee...",
-        "goals": ["greeting", "order_drink", "optionally_order_food", "confirm_order", "closing"]
-    }
-}
 
-# --- 3. Helper Functions ---
 def ensure_session_defaults(state: dict, request: ChatRequest):
-    """Sets up the session memory if it is a new session."""
+    """Sets up the session memory if it is a new session or restores it."""
+    
+    # Initialize session metadata if first time
     if state.get("scenario") is None:
         state["scenario"] = request.scenario_id
         
-        # Load goals based on scenario ID
-        scenario_def = SCENARIOS.get(request.scenario_id, {})
-        state["goals_to_complete"] = list(scenario_def.get("goals", []))
+        # Dynamically load the scenario file from the scenarios folder
+        try:
+            # Looks for backend/scenarios/{scenario_id}.py
+            scenario_module = importlib.import_module(f"scenarios.{request.scenario_id}")
+            scenario_def = getattr(scenario_module, "SCENARIO", {})
+            state["goals_to_complete"] = list(scenario_def.get("goals", []))
+        except (ImportError, AttributeError) as e:
+            print(f"CRITICAL ERROR: Could not load scenario '{request.scenario_id}': {e}")
+            state["goals_to_complete"] = []
+            
         state["all_goals_completed"] = False
-        
-        # Lists to store our separated data
         state["llm_responses"] = []
         state["evaluations"] = []
+
+    # Ensure history persists across multiple calls with same session_id
+    if "chat_history" not in state:
+        state["chat_history"] = []
         
     if state.get("native_language") is None:
         state["native_language"] = request.native_language
@@ -61,10 +62,9 @@ def get_valid_llm_response(prompt: str, max_retries: int = 2):
         if llm_output:
             return llm_output, llm_raw
             
-    print("FAILED TO PARSE JSON AFTER RETRIES")
     return None, llm_raw
 
-# --- 4. API Endpoints ---
+
 @app.get("/")
 def root():
     return {"status": "LanguageCafe backend running"}
@@ -79,7 +79,6 @@ def translate_text(request: TranslationRequest):
     try:
         translation_result = generate_chat_response(prompt)
         clean_translation = translation_result.strip().strip("'\"")
-        
         return {
             "status": "success",
             "original_text": request.text,
@@ -88,70 +87,55 @@ def translate_text(request: TranslationRequest):
         }
     except Exception as e:
         print(f"TRANSLATION ERROR: {e}")
-        return {
-            "status": "error",
-            "message": "Failed to translate text. Please try again."
-        }
+        return {"status": "error", "message": "Failed to translate text."}
 
 @app.post("/chat")
 def chat(request: ChatRequest):
     state = get_session(request.session_id)
 
-    # 1. Prepare session
     ensure_session_defaults(state, request)
 
-    # 2. Get LLM Response
     prompt = create_prompt(state, request.message)
     llm_output, llm_raw = get_valid_llm_response(prompt)
 
     if llm_output is None:
         return {"response": "Sorry, something went wrong. Please try again."}
 
-    # 3. Save memory aspects separately
     state["llm_responses"].append(llm_output)
-    
     state["evaluations"].append({
         "communicative_success": llm_output.get("communicative_success"),
         "detected_goal": llm_output.get("detected_goal"),
         "corrections": llm_output.get("corrections", [])
     })
 
-    bot_response = llm_output.get("response", "Sorry, I couldn't generate a response.")
+    bot_response = llm_output.get("response", "No response generated.")
     
     state["chat_history"].append({"role": "student", "content": request.message})
     state["chat_history"].append({"role": "assistant", "content": bot_response})
 
-    # 4. Update Goals
+ 
     update_goals(state, llm_output)
+    detected_goal = llm_output.get("detected_goal")
     
-    if len(state.get("goals_to_complete", [])) == 0:
+    remaining_goals = state.get("goals_to_complete", [])
+    
+    if detected_goal and detected_goal in remaining_goals:
+        remaining_goals.remove(detected_goal)
+    
+    if all(goal.startswith("[optional]") for goal in remaining_goals):
         state["all_goals_completed"] = True
 
-    # 5. Return ONLY the string response
     return {"response": bot_response}
 
-# --- 5. Data Retrieval Endpoints ---
+
 @app.get("/session/{session_id}/goals")
 def get_session_goals(session_id: str):
     state = get_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="Session not found")
-        
     return {
-        "session_id": session_id,
         "goals_to_complete": state.get("goals_to_complete", []),
         "all_goals_completed": state.get("all_goals_completed", False)
-    }
-
-@app.get("/session/{session_id}/responses")
-def get_session_responses(session_id: str):
-    state = get_session(session_id)
-    if not state:
-        raise HTTPException(status_code=404, detail="Session not found")
-        
-    return {
-        "session_id": session_id,
-        "llm_responses": state.get("llm_responses", [])
     }
 
 @app.get("/session/{session_id}/history")
@@ -159,8 +143,11 @@ def get_chat_history(session_id: str):
     state = get_session(session_id)
     if not state:
         raise HTTPException(status_code=404, detail="Session not found")
-        
-    return {
-        "session_id": session_id,
-        "chat_history": state.get("chat_history", [])
-    }
+    return {"chat_history": state.get("chat_history", [])}
+
+@app.get("/session/{session_id}/evaluations")
+def get_session_evaluations(session_id: str):
+    state = get_session(session_id)
+    if not state:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"evaluations": state.get("evaluations", [])}

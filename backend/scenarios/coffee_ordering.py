@@ -8,7 +8,7 @@ SCENARIO = {
     "goals": [
         "greeting",
         "order_drink",
-        "optionally_order_food",
+        "[optional]optionally_order_food",
         "confirm_order",
         "closing"],
 }

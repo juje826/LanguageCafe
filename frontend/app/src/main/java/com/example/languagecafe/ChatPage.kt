@@ -1,6 +1,8 @@
 package com.example.languagecafe
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,48 +24,38 @@ fun ChatPage(
     modifier: Modifier = Modifier,
     viewModel: ChatViewModel
 ) {
-
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-
     val messages = viewModel.conversation
     val isLoading = viewModel.isLoading
 
-    // Auto-scroll when new messages appear
     LaunchedEffect(messages.size, isLoading) {
         coroutineScope.launch {
-            listState.animateScrollToItem(messages.size)
+            if (messages.isNotEmpty()) {
+                listState.animateScrollToItem(messages.size - 1)
+            }
         }
     }
 
-    Column(
-        modifier = modifier.fillMaxSize()
-    ) {
-
+    Column(modifier = modifier.fillMaxSize()) {
         AppHeader()
-
         ChatMessages(
             messages = messages,
             isLoading = isLoading,
             listState = listState,
             modifier = Modifier.weight(1f)
         )
-
-        MessageInput(
-            onMessageSend = { viewModel.sendMessage(it) }
-        )
+        MessageInput(onMessageSend = { viewModel.sendMessage(it) })
     }
 }
 
 @Composable
 fun AppHeader() {
-
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.primary)
     ) {
-
         Text(
             modifier = Modifier.padding(16.dp),
             text = "Language Cafe",
@@ -80,66 +72,80 @@ fun ChatMessages(
     listState: androidx.compose.foundation.lazy.LazyListState,
     modifier: Modifier = Modifier
 ) {
-
     LazyColumn(
         modifier = modifier.padding(8.dp),
         state = listState
     ) {
-
         items(messages) { msg ->
             MessageBubble(msg)
         }
-
         if (isLoading) {
-            item {
-                TypingIndicator()
-            }
+            item { TypingIndicator() }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(message: ChatMessage) {
-
     val isUser = message.role == "user"
+    var showExtraInfo by remember { mutableStateOf(false) }
+
+    if (showExtraInfo) {
+        AlertDialog(
+            onDismissRequest = { showExtraInfo = false },
+            confirmButton = {
+                TextButton(onClick = { showExtraInfo = false }) {
+                    Text("Got it")
+                }
+            },
+            title = { 
+                Text(if (isUser) "Language Feedback" else "Translation") 
+            },
+            text = {
+                val content = if (isUser) {
+                    if (!message.corrections.isNullOrEmpty()) {
+                        message.corrections.joinToString("\n• ", prefix = "• ")
+                    } else {
+                        "Perfect! No corrections needed."
+                    }
+                } else {
+                    message.translation ?: "Translation not available."
+                }
+                Text(content)
+            }
+        )
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement =
-            if (isUser) Arrangement.End else Arrangement.Start
+        horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
-
         Box(
             modifier = Modifier
                 .padding(6.dp)
                 .background(
-                    if (isUser)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.secondary,
+                    if (isUser) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.secondary,
                     shape = RoundedCornerShape(12.dp)
+                )
+                .combinedClickable(
+                    onClick = { /* normal click */ },
+                    onLongClick = { showExtraInfo = true }
                 )
                 .padding(12.dp)
         ) {
-
-            Text(
-                text = message.text,
-                color = Color.White
-            )
+            Text(text = message.text, color = Color.White)
         }
     }
 }
 
 @Composable
 fun TypingIndicator() {
-
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(8.dp),
         horizontalArrangement = Arrangement.Start
     ) {
-
         Box(
             modifier = Modifier
                 .background(
@@ -148,18 +154,12 @@ fun TypingIndicator() {
                 )
                 .padding(12.dp)
         ) {
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(18.dp),
                     strokeWidth = 2.dp
                 )
-
                 Spacer(modifier = Modifier.width(8.dp))
-
                 Text("Thinking...")
             }
         }
@@ -167,26 +167,18 @@ fun TypingIndicator() {
 }
 
 @Composable
-fun MessageInput(
-    onMessageSend: (String) -> Unit
-) {
-
+fun MessageInput(onMessageSend: (String) -> Unit) {
     var message by remember { mutableStateOf("") }
-
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = Modifier.fillMaxWidth().padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         OutlinedTextField(
             modifier = Modifier.weight(1f),
             value = message,
             onValueChange = { message = it },
             placeholder = { Text("Type a message...") }
         )
-
         IconButton(
             onClick = {
                 if (message.isNotBlank()) {
@@ -195,7 +187,6 @@ fun MessageInput(
                 }
             }
         ) {
-
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,
                 contentDescription = "Send"

@@ -45,8 +45,9 @@ class ChatViewModel : ViewModel() {
         private set
 
     fun sendMessage(message : String) {
-        // Add user message to conversation
-        conversation.add(ChatMessage("user", message))
+        // Add temporary user message to conversation
+        val userMsgIndex = conversation.size
+        conversation.add(ChatMessage(role = "user", text = message))
 
         // Send message to backend
         viewModelScope.launch {
@@ -67,9 +68,21 @@ class ChatViewModel : ViewModel() {
                     )
                 }.body()
 
-                // Add response
-                conversation.add(ChatMessage("assistant", response.response))
-                Log.i("ChatViewModel", "Assistant: ${response.response}")
+                // Update the user message with backend data (like corrections)
+                conversation[userMsgIndex] = ChatMessage(
+                    id = response.user_message.id,
+                    role = "user",
+                    text = response.user_message.text,
+                    corrections = response.user_message.corrections
+                )
+
+                // Add assistant response
+                conversation.add(ChatMessage(
+                    id = response.assistant_message.id,
+                    role = "assistant",
+                    text = response.assistant_message.text,
+                    translation = response.assistant_message.translation
+                ))
 
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Error sending message", e)
@@ -80,12 +93,9 @@ class ChatViewModel : ViewModel() {
     }
 
     fun checkServer() {
-
         viewModelScope.launch {
-
             while (!serverReady) {
                 try {
-
                     val response: ServerStatus = client.get(
                         "https://languagecafe.onrender.com/"
                     ).body()
@@ -93,7 +103,6 @@ class ChatViewModel : ViewModel() {
                     if (response.status == "LanguageCafe backend running") {
                         serverReady = true
                     }
-
                 } catch (e: Exception) {
                     Log.i("ChatViewModel", "Server still waking up...")
                 }
@@ -102,21 +111,38 @@ class ChatViewModel : ViewModel() {
                     delay(5000) // wait 5 seconds before trying again
                 }
             }
-
-
         }
     }
 }
 
+@Serializable
+data class ServerStatus(val status: String)
 
 @Serializable
-data class ServerStatus(
-    val status: String
+data class ChatMessage(
+    val id: String? = null,
+    val role: String,
+    val text: String,
+    val corrections: List<String>? = null,
+    val translation: String? = null
 )
 
+@Serializable
+data class LLMResponse(
+    val user_message: UserMessageDetail,
+    val assistant_message: AssistantMessageDetail
+)
 
 @Serializable
-data class ChatMessage(val role: String, val text: String)
+data class UserMessageDetail(
+    val id: String,
+    val text: String,
+    val corrections: List<String>? = null
+)
 
 @Serializable
-data class LLMResponse(val response: String)
+data class AssistantMessageDetail(
+    val id: String,
+    val text: String,
+    val translation: String? = null
+)

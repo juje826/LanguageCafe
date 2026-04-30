@@ -18,6 +18,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
+import java.util.UUID
 
 class ChatViewModel : ViewModel() {
 
@@ -32,7 +33,10 @@ class ChatViewModel : ViewModel() {
 
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
+            json(Json { 
+                ignoreUnknownKeys = true 
+                coerceInputValues = true
+            })
         }
     }
 
@@ -45,11 +49,10 @@ class ChatViewModel : ViewModel() {
         private set
 
     fun sendMessage(message : String) {
-        // Add temporary user message to conversation
         val userMsgIndex = conversation.size
-        conversation.add(ChatMessage(role = "user", text = message))
+        // Add temporary message with a stable ID
+        conversation.add(ChatMessage(id = UUID.randomUUID().toString(), role = "user", text = message))
 
-        // Send message to backend
         viewModelScope.launch {
             try {
                 isLoading = true
@@ -68,7 +71,7 @@ class ChatViewModel : ViewModel() {
                     )
                 }.body()
 
-                // Update the user message with backend data (like corrections)
+                // Update the user message with the real ID and corrections from backend
                 conversation[userMsgIndex] = ChatMessage(
                     id = response.user_message.id,
                     role = "user",
@@ -108,7 +111,7 @@ class ChatViewModel : ViewModel() {
                 }
 
                 if (!serverReady) {
-                    delay(5000) // wait 5 seconds before trying again
+                    delay(5000)
                 }
             }
         }
@@ -119,11 +122,18 @@ class ChatViewModel : ViewModel() {
 data class ServerStatus(val status: String)
 
 @Serializable
+data class Correction(
+    val original: String,
+    val corrected: String,
+    val explanation: String
+)
+
+@Serializable
 data class ChatMessage(
-    val id: String? = null,
+    val id: String,
     val role: String,
     val text: String,
-    val corrections: List<String>? = null,
+    val corrections: List<Correction>? = null,
     val translation: String? = null
 )
 
@@ -137,7 +147,7 @@ data class LLMResponse(
 data class UserMessageDetail(
     val id: String,
     val text: String,
-    val corrections: List<String>? = null
+    val corrections: List<Correction>? = null
 )
 
 @Serializable

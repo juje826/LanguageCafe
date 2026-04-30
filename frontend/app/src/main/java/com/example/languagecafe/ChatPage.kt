@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -103,16 +104,25 @@ fun MessageBubble(message: ChatMessage) {
                 Text(if (isUser) "Language Feedback" else "Translation") 
             },
             text = {
-                val content = if (isUser) {
+                if (isUser) {
                     if (!message.corrections.isNullOrEmpty()) {
-                        message.corrections.joinToString("\n• ", prefix = "• ")
+                        Column {
+                            message.corrections.forEach { correction ->
+                                Text("Original: ", fontWeight = FontWeight.Bold)
+                                Text(correction.original)
+                                Text("Corrected: ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(correction.corrected)
+                                Text("Why: ", fontWeight = FontWeight.Bold)
+                                Text(correction.explanation)
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                            }
+                        }
                     } else {
-                        "Perfect! No corrections needed."
+                        Text("Perfect! No corrections needed.")
                     }
                 } else {
-                    message.translation ?: "Translation not available."
+                    Text(message.translation ?: "Translation not available.")
                 }
-                Text(content)
             }
         )
     }

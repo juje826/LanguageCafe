@@ -15,5 +15,11 @@ def update_goals(state, llm_output):
     if goal is None:
         return
 
-    if goal not in state["goals_achieved"]:
-        state["goals_achieved"].append(goal)
+    remaining_goals = state.get("goals_to_complete", [])
+
+    if goal in remaining_goals:
+        remaining_goals.remove(goal)
+
+    # Check completion
+    if all(goal.startswith("[optional]") for goal in remaining_goals):
+        state["all_goals_completed"] = True

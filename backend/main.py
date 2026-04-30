@@ -5,6 +5,7 @@ from llm_service import generate_chat_response
 from memory.session_store import get_session
 from scenarios.scenario_engine import create_prompt, update_goals
 from utils.json_parser import parse_llm_json
+from uuid import uuid4
 
 app = FastAPI()
 
@@ -54,6 +55,7 @@ def ensure_session_defaults(state: dict, request: ChatRequest):
 
 def get_valid_llm_response(prompt: str, max_retries: int = 2):
     """Handles the LLM calling and JSON parsing logic."""
+    llm_raw = None
     for _ in range(max_retries):
         llm_raw = generate_chat_response(prompt)
         print("RAW LLM OUTPUT:\n", llm_raw)
@@ -69,6 +71,7 @@ def get_valid_llm_response(prompt: str, max_retries: int = 2):
 def root():
     return {"status": "LanguageCafe backend running"}
 
+# prob wont use /translate bc we handle it in the llm api call already
 @app.post("/translate")
 def translate_text(request: TranslationRequest):
     if request.source_language == "auto":
@@ -92,7 +95,6 @@ def translate_text(request: TranslationRequest):
 @app.post("/chat")
 def chat(request: ChatRequest):
     state = get_session(request.session_id)
-
     ensure_session_defaults(state, request)
 
     prompt = create_prompt(state, request.message)
@@ -100,33 +102,50 @@ def chat(request: ChatRequest):
 
     if llm_output is None:
         return {"response": "Sorry, something went wrong. Please try again."}
+    
+    user_message_id = str(uuid4())
+    assistant_message_id = str(uuid4())
+
+    bot_response = llm_output.get("response", "")
+    translation = llm_output.get("translation") or "no translation available"
+    corrections = llm_output.get("corrections") or []
+
+    state["chat_history"].append({
+        "id": user_message_id,
+        "role": "user",
+        "text": request.message,
+        "corrections": corrections
+    })
+
+    state["chat_history"].append({
+        "id": assistant_message_id,
+        "role": "assistant",
+        "text": bot_response,
+        "translation": translation,
+        "corrections": None
+    })
 
     state["llm_responses"].append(llm_output)
     state["evaluations"].append({
         "communicative_success": llm_output.get("communicative_success"),
         "detected_goal": llm_output.get("detected_goal"),
-        "corrections": llm_output.get("corrections", [])
+        "corrections": corrections
     })
 
-    bot_response = llm_output.get("response", "No response generated.")
-    
-    state["chat_history"].append({"role": "student", "content": request.message})
-    state["chat_history"].append({"role": "assistant", "content": bot_response})
-
- 
     update_goals(state, llm_output)
-    detected_goal = llm_output.get("detected_goal")
-    
-    remaining_goals = state.get("goals_to_complete", [])
-    
-    if detected_goal and detected_goal in remaining_goals:
-        remaining_goals.remove(detected_goal)
-    
-    if all(goal.startswith("[optional]") for goal in remaining_goals):
-        state["all_goals_completed"] = True
 
-    return {"response": bot_response}
-
+    return {
+        "user_message": {
+            "id": user_message_id,
+            "text": request.message,
+            "corrections": corrections
+        },
+        "assistant_message": {
+            "id": assistant_message_id,
+            "text": bot_response,
+            "translation": translation
+        }
+    }
 
 @app.get("/session/{session_id}/goals")
 def get_session_goals(session_id: str):

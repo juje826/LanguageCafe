@@ -2,8 +2,10 @@ def build_prompt(state, scenario, user_message):
     native_lang = state["native_language"]
     target_lang = state["target_language"]
     history_text = format_history(state["chat_history"])
-    goals_text = "\n".join(f"- {g}" for g in scenario["goals"])
-    achieved_text = ", ".join(state["goals_achieved"])
+    remaining_goals = state.get("goals_to_complete", [])
+    current_goal = remaining_goals[0] if remaining_goals else "All goals completed"
+
+    goals_text = "\n".join(f"- {g}" for g in remaining_goals)
 
     prompt = f"""
     ROLE:
@@ -13,8 +15,11 @@ def build_prompt(state, scenario, user_message):
     - The student's native language is: {native_lang}
     - The student is learning: {target_lang}
 
-    COMMUNICATIVE GOALS:
+    SCENARIO GOALS (remaining):
     {goals_text}
+
+    CURRENT GOAL:
+    {current_goal}
 
     CONVERSATION SO FAR:
     {history_text}
@@ -22,47 +27,52 @@ def build_prompt(state, scenario, user_message):
     STUDENT MESSAGE:
     {user_message}
 
-    GOALS ALREADY ACHIEVED:
-    {achieved_text}
-
     TASK:
     - Continue the roleplay naturally
-    - Guide conversation toward scenario goals
-    - Adapt to unexpected input if needed
-    - Talk primarily in the {target_lang} language: only if there are major misunderstandings or corrections, talk in {native_lang}
+    - Guide the student toward completing the CURRENT GOAL
+    - Stay in character at all times
+    - Speak primarily in {target_lang}
+    - Only use {native_lang} if absolutely necessary for clarity
 
-    EVALUATE STUDENT LANGUAGE:
-    identify mistakes in grammar, spelling or vocabulary
+    LANGUAGE EVALUATION:
+    - Identify mistakes in grammar, spelling, or vocabulary
+    - Only include corrections if there are actual mistakes
+    - Be concise and helpful
 
     OUTPUT FORMAT:
     Return ONLY JSON with the following structure:
 
     {{
     "communicative_success": true or false,
-    "detected_goal": "one of: {', '.join(scenario["goals"])}"
-    "corrections": ["list of corrections"],
-    "response": "roleplay reply"
+    "detected_goal": "one of: {', '.join(scenario["goals"])} or null",
+    "corrections": [
+        {{
+        "original": "incorrect part",
+        "corrected": "correct version",
+        "explanation": "short explanation"
+        }}
+    ],
+    "response": "roleplay reply in {target_lang}",
+    "translation": "full translation of the response in {native_lang}"
     }}
 
     IMPORTANT:
-    - Do not include text outside JSON.
+    - Do not include text outside JSON
+    - If no mistakes: return an empty corrections list []
+    - detected_goal must match EXACTLY one of the listed goals or be null
     """
 
     return prompt
 
 def format_history(history):
-
     if len(history) == 0:
-        return "conversation only just started"
+        return "Conversation just started."
 
     lines = []
 
     for msg in history:
-
         role = msg["role"]
-
-        content = msg["content"]
-
+        content = msg.get("text", "")
         lines.append(f"{role}: {content}")
 
     return "\n".join(lines)

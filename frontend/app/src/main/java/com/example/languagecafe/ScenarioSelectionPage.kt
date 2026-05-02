@@ -6,28 +6,27 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import java.util.UUID
 
-data class Scenario(val id: String, val title: String, val icon: ImageVector)
+data class Scenario(val id: String, val title: String, val emoji: String)
 
 @Composable
 fun ScenarioSelectionPage(
     onScenarioSelected: (scenarioId: String, sessionId: String) -> Unit
 ) {
-    // available scenarios
+    // available scenarios updated to match backend
     val scenarios = listOf(
-        Scenario("coffee_ordering", "Ordering Coffee", Icons.Default.Coffee),
-        Scenario("restaurant", "At the Restaurant", Icons.Default.Restaurant),
-        Scenario("directions", "Asking for Directions", Icons.Default.Directions),
-        Scenario("hotel", "Checking into a Hotel", Icons.Default.Hotel),
-        Scenario("airport", "At the Airport", Icons.Default.LocalAirport),
-        Scenario("party", "Socializing at a Party", Icons.Default.Celebration)
+        Scenario("coffee_ordering", "Order a coffee", "☕"),
+        Scenario("hotel_check_in", "Check into your hotel", "🏨"),
+        Scenario("store_return", "Return an item to the store", "🛍️"),
+        Scenario("tourist_information", "Request tourist info", "ℹ️"),
+        Scenario("doctor_visit", "Visit the doctor", "🏥"),
+        Scenario("job_interview", "Job interview", "💼")
     )
 
     Column(modifier = Modifier
@@ -68,10 +67,9 @@ fun ScenarioSelectionPage(
                             )
                         },
                         leadingContent = {
-                            Icon(
-                                imageVector = scenario.icon,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
+                            Text(
+                                text = scenario.emoji,
+                                fontSize = 28.sp
                             )
                         },
                         trailingContent = {

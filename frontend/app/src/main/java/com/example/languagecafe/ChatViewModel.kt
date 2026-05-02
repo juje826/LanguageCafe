@@ -7,7 +7,9 @@ import androidx.lifecycle.viewModelScope
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.plugins.contentnegotiation.*
+import io.ktor.client.plugins.logging.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.json
@@ -38,6 +40,19 @@ class ChatViewModel : ViewModel() {
                 coerceInputValues = true
             })
         }
+        install(Logging) {
+            level = LogLevel.ALL
+            logger = object : Logger {
+                override fun log(message: String) {
+                    Log.d("Ktor", message)
+                }
+            }
+        }
+        install(HttpTimeout) {
+            requestTimeoutMillis = 100_000 // 100 seconds
+            connectTimeoutMillis = 100_000
+            socketTimeoutMillis = 100_000
+        }
     }
 
     var conversation = mutableStateListOf<ChatMessage>()
@@ -50,7 +65,6 @@ class ChatViewModel : ViewModel() {
 
     fun sendMessage(message : String) {
         val userMsgIndex = conversation.size
-        // Add temporary message with a stable ID
         conversation.add(ChatMessage(id = UUID.randomUUID().toString(), role = "user", text = message))
 
         viewModelScope.launch {
@@ -71,7 +85,6 @@ class ChatViewModel : ViewModel() {
                     )
                 }.body()
 
-                // Update the user message with the real ID and corrections from backend
                 conversation[userMsgIndex] = ChatMessage(
                     id = response.user_message.id,
                     role = "user",
@@ -79,7 +92,6 @@ class ChatViewModel : ViewModel() {
                     corrections = response.user_message.corrections
                 )
 
-                // Add assistant response
                 conversation.add(ChatMessage(
                     id = response.assistant_message.id,
                     role = "assistant",
@@ -89,6 +101,12 @@ class ChatViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Error sending message", e)
+                // Add an error bubble so the user knows it failed
+                conversation.add(ChatMessage(
+                    id = UUID.randomUUID().toString(),
+                    role = "assistant",
+                    text = "Sorry, the server is taking too long to respond. Please try again in a moment."
+                ))
             } finally {
                 isLoading =  false
             }

@@ -6,6 +6,12 @@ from memory.session_store import get_session
 from scenarios.scenario_engine import create_prompt, update_goals
 from utils.json_parser import parse_llm_json
 from uuid import uuid4
+import time
+
+def log_time(label, start):
+    now = time.time()
+    print(f"[TIMING] {label}: {now - start:.3f}s")
+    return now
 
 app = FastAPI()
 
@@ -94,21 +100,31 @@ def translate_text(request: TranslationRequest):
 
 @app.post("/chat")
 def chat(request: ChatRequest):
+    t = time.time()
+
     state = get_session(request.session_id)
+    t = log_time("get_session", t)
+
     ensure_session_defaults(state, request)
+    t = log_time("ensure_session_defaults", t)
 
     prompt = create_prompt(state, request.message)
+    t = log_time("create_prompt", t)
+
     llm_output, llm_raw = get_valid_llm_response(prompt)
+    t = log_time("LLM total (including retries)", t)
 
     if llm_output is None:
         return {"response": "Sorry, something went wrong. Please try again."}
-    
+
     user_message_id = str(uuid4())
     assistant_message_id = str(uuid4())
 
     bot_response = llm_output.get("response", "")
     translation = llm_output.get("translation") or "no translation available"
     corrections = llm_output.get("corrections") or []
+
+    t = log_time("post-processing setup", t)
 
     state["chat_history"].append({
         "id": user_message_id,
@@ -133,6 +149,8 @@ def chat(request: ChatRequest):
     })
 
     update_goals(state, llm_output)
+
+    log_time("total chat request", t)
 
     return {
         "user_message": {

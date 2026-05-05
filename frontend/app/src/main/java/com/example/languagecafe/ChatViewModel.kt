@@ -64,8 +64,9 @@ class ChatViewModel : ViewModel() {
         private set
 
     fun sendMessage(message : String) {
-        val userMsgIndex = conversation.size
-        conversation.add(ChatMessage(id = UUID.randomUUID().toString(), role = "user", text = message))
+        // Generate a temporary ID to track this specific message
+        val tempId = UUID.randomUUID().toString()
+        conversation.add(ChatMessage(id = tempId, role = "user", text = message))
 
         viewModelScope.launch {
             try {
@@ -85,13 +86,18 @@ class ChatViewModel : ViewModel() {
                     )
                 }.body()
 
-                conversation[userMsgIndex] = ChatMessage(
-                    id = response.user_message.id,
-                    role = "user",
-                    text = response.user_message.text,
-                    corrections = response.user_message.corrections
-                )
+                // FIND AND UPDATE the user message using the stable ID
+                val index = conversation.indexOfFirst { it.id == tempId }
+                if (index != -1) {
+                    conversation[index] = ChatMessage(
+                        id = response.user_message.id, // Update to the real ID from backend
+                        role = "user",
+                        text = response.user_message.text,
+                        corrections = response.user_message.corrections
+                    )
+                }
 
+                // Add assistant response
                 conversation.add(ChatMessage(
                     id = response.assistant_message.id,
                     role = "assistant",
@@ -101,11 +107,10 @@ class ChatViewModel : ViewModel() {
 
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Error sending message", e)
-                // Add an error bubble so the user knows it failed
                 conversation.add(ChatMessage(
                     id = UUID.randomUUID().toString(),
                     role = "assistant",
-                    text = "Sorry, the server is taking too long to respond. Please try again in a moment."
+                    text = "Sorry, something went wrong. Please check your connection or try again."
                 ))
             } finally {
                 isLoading =  false

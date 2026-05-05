@@ -77,11 +77,16 @@ fun ChatMessages(
         modifier = modifier.padding(8.dp),
         state = listState
     ) {
-        items(messages) { msg ->
+        // FIXED: Added stable keys based on message.id
+        items(
+            items = messages,
+            key = { it.id }
+        ) { msg ->
             MessageBubble(msg)
         }
+        
         if (isLoading) {
-            item { TypingIndicator() }
+            item(key = "typing_indicator") { TypingIndicator() }
         }
     }
 }
@@ -91,6 +96,11 @@ fun ChatMessages(
 fun MessageBubble(message: ChatMessage) {
     val isUser = message.role == "user"
     var showExtraInfo by remember { mutableStateOf(false) }
+
+    // Reset the dialog state whenever the message ID changes to prevent feedback "leaking"
+    LaunchedEffect(message.id) {
+        showExtraInfo = false
+    }
 
     if (showExtraInfo) {
         AlertDialog(

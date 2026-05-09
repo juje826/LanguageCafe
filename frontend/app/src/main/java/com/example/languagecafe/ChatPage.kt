@@ -46,7 +46,10 @@ fun ChatPage(
             listState = listState,
             modifier = Modifier.weight(1f)
         )
-        MessageInput(onMessageSend = { viewModel.sendMessage(it) })
+        MessageInput(
+            onMessageSend = { viewModel.sendMessage(it) },
+            enabled = !viewModel.allGoalsCompleted
+        )
     }
 }
 
@@ -202,7 +205,7 @@ fun TypingIndicator() {
 }
 
 @Composable
-fun MessageInput(onMessageSend: (String) -> Unit) {
+fun MessageInput(onMessageSend: (String) -> Unit, enabled: Boolean) {
     var message by remember { mutableStateOf("") }
     Row(
         modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -212,9 +215,18 @@ fun MessageInput(onMessageSend: (String) -> Unit) {
             modifier = Modifier.weight(1f),
             value = message,
             onValueChange = { message = it },
-            placeholder = { Text("Type a message...") }
+            placeholder = {
+                Text(
+                    if (enabled)
+                        "Type a message..."
+                    else
+                        "Scenario completed!"
+                )
+                          },
+            enabled = enabled
         )
         IconButton(
+            enabled = enabled,
             onClick = {
                 if (message.isNotBlank()) {
                     onMessageSend(message)

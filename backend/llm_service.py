@@ -6,8 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Create openAI client when server starts
-client = OpenAI(api_key=os.getenv("LLM_API_KEY"),
-                base_url="https://litellm.nolai.nl/v1")
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 SYSTEM_PROMPT = """
@@ -31,7 +30,7 @@ def generate_chat_response(prompt):
     """
 
     response = client.chat.completions.create(
-        model="gemma3:27b", # or the other model
+        model="gpt-4o-mini", # or the other model
         messages=[{"role": "system", "content": SYSTEM_PROMPT},
                   {"role": "user", "content": prompt}],
         temperature=0.3

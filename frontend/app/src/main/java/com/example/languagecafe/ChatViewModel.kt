@@ -63,6 +63,9 @@ class ChatViewModel : ViewModel() {
     var serverReady by mutableStateOf(false)
         private set
 
+    var allGoalsCompleted by mutableStateOf(false)
+        private set
+
     fun sendMessage(message : String) {
         // Generate a temporary ID to track this specific message
         val tempId = UUID.randomUUID().toString()
@@ -85,6 +88,8 @@ class ChatViewModel : ViewModel() {
                         )
                     )
                 }.body()
+
+                allGoalsCompleted = response.all_goals_completed
 
                 // FIND AND UPDATE the user message using the stable ID
                 val index = conversation.indexOfFirst { it.id == tempId }
@@ -163,7 +168,8 @@ data class ChatMessage(
 @Serializable
 data class LLMResponse(
     val user_message: UserMessageDetail,
-    val assistant_message: AssistantMessageDetail
+    val assistant_message: AssistantMessageDetail,
+    val all_goals_completed: Boolean = false
 )
 
 @Serializable

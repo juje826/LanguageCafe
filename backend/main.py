@@ -108,6 +108,22 @@ def chat(request: ChatRequest):
     ensure_session_defaults(state, request)
     t = log_time("ensure_session_defaults", t)
 
+    # hard stop if completed
+    if state.get("all_goals_completed", False):
+        return {
+            "user_message": {
+                "id": str(uuid4()),
+                "text": request.message,
+                "corrections": []
+            },
+            "assistant_message": {
+                "id": str(uuid4()),
+                "text": "All goals completed. Session finished.",
+                "translation": "All goals completed. Session finished."
+            },
+            "all_goals_completed": True
+        }
+
     prompt = create_prompt(state, request.message)
     t = log_time("create_prompt", t)
 
@@ -162,7 +178,8 @@ def chat(request: ChatRequest):
             "id": assistant_message_id,
             "text": bot_response,
             "translation": translation
-        }
+        },
+        "all_goals_completed": state.get("all_goals_completed", False)
     }
 
 @app.get("/session/{session_id}/goals")

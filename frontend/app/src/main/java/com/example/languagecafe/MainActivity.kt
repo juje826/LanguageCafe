@@ -43,25 +43,18 @@ class MainActivity : ComponentActivity() {
                     BackHandler(
                         enabled = !showHomeScreen
                     ) {
-
                         when {
-
                             // from chat -> go back to scenario selection
                             selectedScenario != null -> {
-
                                 selectedScenario = null
                                 sessionId = null
-
                                 chatViewModel.conversation.clear()
                             }
-
                             // from scenario selection -> go back to language selection
                             nativeLanguage != null -> {
-
                                 nativeLanguage = null
                                 targetLanguage = null
                             }
-
                             // from language selection -> go back to home screen
                             else -> {
                                 showHomeScreen = true
@@ -70,7 +63,6 @@ class MainActivity : ComponentActivity() {
                     }
 
                     when {
-
                         // home screen
                         showHomeScreen -> {
                             HomeScreen(chatViewModel) {
@@ -80,23 +72,19 @@ class MainActivity : ComponentActivity() {
 
                         // language selection screen
                         nativeLanguage == null || targetLanguage == null -> {
-
                             LanguageSelectionPage { targetLang ->
-
                                 nativeLanguage = "en"
                                 targetLanguage = targetLang
 
-                                // store in ViewModel so backend can access later
-                                chatViewModel.nativeLanguage = targetLanguage
+                                // FIXED: Correctly assign languages to the ViewModel
+                                chatViewModel.nativeLanguage = "en"
                                 chatViewModel.targetLanguage = targetLang
                             }
                         }
 
                         // scenario selection screen
                         selectedScenario == null || sessionId == null -> {
-
                             ScenarioSelectionPage { scenario, session ->
-
                                 selectedScenario = scenario
                                 sessionId = session
 
@@ -107,11 +95,9 @@ class MainActivity : ComponentActivity() {
 
                         // chat screen
                         else -> {
-
                             Scaffold(
                                 modifier = Modifier.fillMaxSize()
                             ) { innerPadding ->
-
                                 ChatPage(
                                     modifier = Modifier.padding(innerPadding),
                                     viewModel = chatViewModel

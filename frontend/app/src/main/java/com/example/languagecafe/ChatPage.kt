@@ -73,16 +73,32 @@ fun ChatMessages(
     listState: androidx.compose.foundation.lazy.LazyListState,
     modifier: Modifier = Modifier
 ) {
+    // ARCHITECTURAL FIX: Hoist the dialog state to the list level
+    var selectedMessageId by remember { mutableStateOf<String?>(null) }
+    
+    // Find the latest version of the selected message from the list
+    val selectedMessage = messages.find { it.id == selectedMessageId }
+
+    // Global dialog that reacts to the selected message
+    selectedMessage?.let { message ->
+        FeedbackDialog(
+            message = message,
+            onDismiss = { selectedMessageId = null }
+        )
+    }
+
     LazyColumn(
         modifier = modifier.padding(8.dp),
         state = listState
     ) {
-        // FIXED: Added stable keys based on message.id
         items(
             items = messages,
             key = { it.id }
         ) { msg ->
-            MessageBubble(msg)
+            MessageBubble(
+                message = msg,
+                onLongClick = { selectedMessageId = msg.id }
+            )
         }
         
         if (isLoading) {
@@ -91,51 +107,50 @@ fun ChatMessages(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun MessageBubble(message: ChatMessage) {
+fun FeedbackDialog(message: ChatMessage, onDismiss: () -> Unit) {
     val isUser = message.role == "user"
-    var showExtraInfo by remember { mutableStateOf(false) }
-
-    // Reset the dialog state whenever the message ID changes to prevent feedback "leaking"
-    LaunchedEffect(message.id) {
-        showExtraInfo = false
-    }
-
-    if (showExtraInfo) {
-        AlertDialog(
-            onDismissRequest = { showExtraInfo = false },
-            confirmButton = {
-                TextButton(onClick = { showExtraInfo = false }) {
-                    Text("Got it")
-                }
-            },
-            title = { 
-                Text(if (isUser) "Language Feedback" else "Translation") 
-            },
-            text = {
-                if (isUser) {
-                    if (!message.corrections.isNullOrEmpty()) {
-                        Column {
-                            message.corrections.forEach { correction ->
-                                Text("Original: ", fontWeight = FontWeight.Bold)
-                                Text(correction.original)
-                                Text("Corrected: ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                                Text(correction.corrected)
-                                Text("Why: ", fontWeight = FontWeight.Bold)
-                                Text(correction.explanation)
-                                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Got it")
+            }
+        },
+        title = { 
+            Text(if (isUser) "Language Feedback" else "Translation") 
+        },
+        text = {
+            if (isUser) {
+                if (!message.corrections.isNullOrEmpty()) {
+                    Column {
+                        message.corrections.forEach { correction ->
+                            Text("Original: ", fontWeight = FontWeight.Bold)
+                            Text(correction.original)
+                            Text("Corrected: ", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                            Text(correction.corrected)
+                            Text("Why: ", fontWeight = FontWeight.Bold)
+                            Text(correction.explanation)
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         }
-                    } else {
-                        Text("Perfect! No corrections needed.")
                     }
                 } else {
-                    Text(message.translation ?: "Translation not available.")
+                    Text("Perfect! No corrections needed.")
                 }
+            } else {
+                Text(message.translation ?: "Translation not available.")
             }
-        )
-    }
+        }
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun MessageBubble(
+    message: ChatMessage,
+    onLongClick: () -> Unit
+) {
+    val isUser = message.role == "user"
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -151,7 +166,7 @@ fun MessageBubble(message: ChatMessage) {
                 )
                 .combinedClickable(
                     onClick = { /* normal click */ },
-                    onLongClick = { showExtraInfo = true }
+                    onLongClick = onLongClick
                 )
                 .padding(12.dp)
         ) {

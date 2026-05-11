@@ -35,9 +35,17 @@ def build_prompt(state, scenario, user_message):
     - Only use {native_lang} if absolutely necessary for clarity
 
     LANGUAGE EVALUATION (for corrections):
-    - Identify mistakes in grammar, spelling, vocabulary, or language usage
-    - The student MUST speak in {target_lang}
-    - If the student uses another language, ALWAYS correct it
+    - Evaluate the student's message carefully
+    - The student MUST write in {target_lang}
+    - If ANY word is not in {target_lang}, include a correction
+    - ALWAYS detect:
+        - wrong language
+        - grammar mistakes
+        - spelling mistakes
+        - incorrect vocabulary
+    - Do NOT ignore mistakes, even if the meaning is understandable
+    - If the student's message is fully correct, return []
+    - Explanations must be short and written in {native_lang}
     - Be concise and helpful
 
     OUTPUT FORMAT:

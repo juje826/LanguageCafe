@@ -34,11 +34,10 @@ def build_prompt(state, scenario, user_message):
     - Speak primarily in {target_lang}
     - Only use {native_lang} if absolutely necessary for clarity
 
-    LANGUAGE EVALUATION:
+    LANGUAGE EVALUATION (for corrections):
     - Identify mistakes in grammar, spelling, vocabulary, or language usage
     - The student MUST speak in {target_lang}
     - If the student uses another language, ALWAYS correct it
-    - Only include corrections if there are actual mistakes
     - Be concise and helpful
 
     OUTPUT FORMAT:
@@ -51,7 +50,7 @@ def build_prompt(state, scenario, user_message):
         {{
         "original": "incorrect part",
         "corrected": "correct version",
-        "explanation": "short explanation"
+        "explanation": "short explanation in {native_lang}"
         }}
     ],
     "response": "roleplay reply in {target_lang}",

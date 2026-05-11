@@ -57,11 +57,11 @@ def build_prompt(state, scenario, user_message):
 
     Corrections:
     [
-      {
+      {{
         "original": "bonjour monsieur",
         "corrected": "hola señor",
         "explanation": "Use Spanish instead of French."
-      }
+      }}
     ]
 
     Example 2:
@@ -71,11 +71,11 @@ def build_prompt(state, scenario, user_message):
 
     Corrections:
     [
-      {
+      {{
         "original": "yo querer cafe",
         "corrected": "yo quiero café",
         "explanation": "Use the correct verb conjugation and spelling."
-      }
+      }}
     ]
 
     Example 3:
@@ -85,11 +85,11 @@ def build_prompt(state, scenario, user_message):
 
     Corrections:
     [
-      {
+      {{
         "original": "coffee",
         "corrected": "café",
         "explanation": "Use Spanish vocabulary."
-      }
+      }}
     ]
 
 

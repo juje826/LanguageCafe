@@ -17,6 +17,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,19 +30,28 @@ fun ChatPage(
     viewModel: ChatViewModel
 ) {
     val listState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
     val messages = viewModel.conversation
     val isLoading = viewModel.isLoading
 
+    // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size, isLoading) {
-        coroutineScope.launch {
-            if (messages.isNotEmpty()) {
-                listState.animateScrollToItem(messages.size - 1)
-            }
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // Auto-scroll to bottom when keyboard opens
+    val isKeyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    LaunchedEffect(isKeyboardVisible) {
+        if (isKeyboardVisible && messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    Column(
+        modifier = modifier.fillMaxSize() 
+        // Removed .imePadding() because Scaffold in MainActivity now handles insets via safeDrawing
+    ) {
         AppHeader(
             title = viewModel.scenarioTitle,
             emoji = viewModel.scenarioEmoji

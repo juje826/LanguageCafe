@@ -125,6 +125,12 @@ class ChatViewModel : ViewModel() {
         }
     }
 
+    fun resetChat() {
+        conversation.clear()
+        allGoalsCompleted = false
+        isLoading = false
+    }
+
     fun checkServer() {
         viewModelScope.launch {
             while (!serverReady) {

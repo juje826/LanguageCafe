@@ -50,7 +50,7 @@ class MainActivity : ComponentActivity() {
                             selectedScenario != null -> {
                                 selectedScenario = null
                                 sessionId = null
-                                chatViewModel.conversation.clear()
+                                chatViewModel.resetChat()
                             }
                             // from scenario selection -> go back to language selection
                             nativeLanguage != null -> {
@@ -94,6 +94,8 @@ class MainActivity : ComponentActivity() {
                                 chatViewModel.scenarioTitle = scenario.title
                                 chatViewModel.scenarioEmoji = scenario.emoji
                                 chatViewModel.sessionId = session
+                                // Ensure state is fresh when starting a new scenario
+                                chatViewModel.resetChat()
                             }
                         }
 

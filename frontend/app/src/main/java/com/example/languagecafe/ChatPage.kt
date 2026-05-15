@@ -42,7 +42,10 @@ fun ChatPage(
     }
 
     Column(modifier = modifier.fillMaxSize()) {
-        AppHeader()
+        AppHeader(
+            title = viewModel.scenarioTitle,
+            emoji = viewModel.scenarioEmoji
+        )
         ChatMessages(
             messages = messages,
             isLoading = isLoading,
@@ -57,18 +60,28 @@ fun ChatPage(
 }
 
 @Composable
-fun AppHeader() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.primary)
+fun AppHeader(title: String = "Language Cafe", emoji: String = "") {
+    Surface(
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = Color.White,
+        shadowElevation = 4.dp
     ) {
-        Text(
-            modifier = Modifier.padding(16.dp),
-            text = "Language Cafe",
-            color = Color.White,
-            fontSize = 22.sp
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (emoji.isNotEmpty()) {
+                Text(text = emoji, fontSize = 24.sp)
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Text(
+                text = if (title.isEmpty()) "Language Cafe" else title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
 

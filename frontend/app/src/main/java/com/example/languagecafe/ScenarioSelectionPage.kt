@@ -17,7 +17,7 @@ data class Scenario(val id: String, val title: String, val emoji: String)
 
 @Composable
 fun ScenarioSelectionPage(
-    onScenarioSelected: (scenarioId: String, sessionId: String) -> Unit
+    onScenarioSelected: (scenario: Scenario, sessionId: String) -> Unit
 ) {
     // available scenarios updated to match backend
     val scenarios = listOf(
@@ -52,7 +52,7 @@ fun ScenarioSelectionPage(
                         .fillMaxWidth()
                         .clickable {
                             val sessionId = UUID.randomUUID().toString()
-                            onScenarioSelected(scenario.id, sessionId)
+                            onScenarioSelected(scenario, sessionId)
                         },
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)

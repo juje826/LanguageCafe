@@ -85,10 +85,12 @@ class MainActivity : ComponentActivity() {
                         // scenario selection screen
                         selectedScenario == null || sessionId == null -> {
                             ScenarioSelectionPage { scenario, session ->
-                                selectedScenario = scenario
+                                selectedScenario = scenario.id
                                 sessionId = session
 
-                                chatViewModel.scenarioId = scenario
+                                chatViewModel.scenarioId = scenario.id
+                                chatViewModel.scenarioTitle = scenario.title
+                                chatViewModel.scenarioEmoji = scenario.emoji
                                 chatViewModel.sessionId = session
                             }
                         }

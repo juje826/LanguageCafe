@@ -28,6 +28,8 @@ class ChatViewModel : ViewModel() {
     var targetLanguage: String? = null
     var sessionId: String = ""
     var scenarioId: String = ""
+    var scenarioTitle by mutableStateOf("")
+    var scenarioEmoji by mutableStateOf("")
 
     var streak by mutableStateOf(0)
     var dailyGoal by mutableStateOf(5)

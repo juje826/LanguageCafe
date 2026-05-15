@@ -2,6 +2,7 @@ package com.example.languagecafe
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,10 +13,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -78,6 +81,7 @@ fun ChatMessages(
 ) {
     // ARCHITECTURAL FIX: Hoist the dialog state to the list level
     var selectedMessageId by remember { mutableStateOf<String?>(null) }
+    var hasDismissedHint by rememberSaveable { mutableStateOf(false) }
     
     // Find the latest version of the selected message from the list
     val selectedMessage = messages.find { it.id == selectedMessageId }
@@ -90,22 +94,37 @@ fun ChatMessages(
         )
     }
 
-    LazyColumn(
-        modifier = modifier.padding(8.dp),
-        state = listState
-    ) {
-        items(
-            items = messages,
-            key = { it.id }
-        ) { msg ->
-            MessageBubble(
-                message = msg,
-                onLongClick = { selectedMessageId = msg.id }
+    Column(modifier = modifier) {
+        if (messages.size == 2 && !hasDismissedHint) {
+            Text(
+                text = "💡 Tip: Long press any message for translations or corrections!",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .padding(8.dp)
+                    .clickable { hasDismissedHint = true }
+                    .fillMaxWidth(),
+                textAlign = TextAlign.Center
             )
         }
-        
-        if (isLoading) {
-            item(key = "typing_indicator") { TypingIndicator() }
+
+        LazyColumn(
+            modifier = Modifier.fillMaxWidth().weight(1f).padding(8.dp),
+            state = listState
+        ) {
+            items(
+                items = messages,
+                key = { it.id }
+            ) { msg ->
+                MessageBubble(
+                    message = msg,
+                    onLongClick = { selectedMessageId = msg.id }
+                )
+            }
+            
+            if (isLoading) {
+                item(key = "typing_indicator") { TypingIndicator() }
+            }
         }
     }
 }

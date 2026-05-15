@@ -48,54 +48,8 @@ def build_prompt(state, scenario, user_message):
     - Explanations must be short and written in {native_lang}
     - Be concise and helpful
 
-    CORRECTION EXAMPLES:
-
-    Example 1:
-    Target language: Spanish
-    Student message:
-    "bonjour monsieur"
-
-    Corrections:
-    [
-      {{
-        "original": "bonjour monsieur",
-        "corrected": "hola señor",
-        "explanation": "Use Spanish instead of French."
-      }}
-    ]
-
-    Example 2:
-    Target language: Spanish
-    Student message:
-    "yo querer cafe"
-
-    Corrections:
-    [
-      {{
-        "original": "yo querer cafe",
-        "corrected": "yo quiero café",
-        "explanation": "Use the correct verb conjugation and spelling."
-      }}
-    ]
-
-    Example 3:
-    Target language: Spanish
-    Student message:
-    "quiero un coffee"
-
-    Corrections:
-    [
-      {{
-        "original": "coffee",
-        "corrected": "café",
-        "explanation": "Use Spanish vocabulary."
-      }}
-    ]
-
-
     OUTPUT FORMAT:
     Return ONLY JSON with the following structure:
-
     {{
     "communicative_success": true or false,
     "detected_goal": "one of: {', '.join(scenario["goals"])} or null",

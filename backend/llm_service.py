@@ -21,6 +21,7 @@ LANGUAGE RULES:
 - use CEFR level A1
 - use short sentences
 - avoid complex grammar
+- prioritize effective communication over strict correctness
 """
 
 def generate_chat_response(prompt):

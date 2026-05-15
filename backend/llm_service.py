@@ -29,7 +29,7 @@ def generate_chat_response(prompt):
     """
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini", # or the other model
+        model="gpt-4o", # or the other model
         messages=[{"role": "system", "content": SYSTEM_PROMPT},
                   {"role": "user", "content": prompt}],
         temperature=0.3
